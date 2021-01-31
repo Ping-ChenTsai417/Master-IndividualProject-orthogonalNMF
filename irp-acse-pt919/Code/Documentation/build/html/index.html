@@ -1,0 +1,568 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Welcome to Pixel-level Label Prediction Tool’s documentation! &#8212; Pixel-level Label Prediction Tool 0.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="welcome-to-pixel-level-label-prediction-tool-s-documentation">
+<h1>Welcome to Pixel-level Label Prediction Tool’s documentation!<a class="headerlink" href="#welcome-to-pixel-level-label-prediction-tool-s-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+</div>
+<div class="section" id="nmf-with-sparseness-constraints-tool-nmf-sparse-py">
+<h1>NMF with Sparseness Constraints Tool: NMF_Sparse.py<a class="headerlink" href="#nmf-with-sparseness-constraints-tool-nmf-sparse-py" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="module-NMF_Sparse"></span><p>Run Non-nagative matrx factorization with sparseness constraints</p>
+<dl class="function">
+<dt id="NMF_Sparse.initialise_WH">
+<code class="sig-prename descclassname">NMF_Sparse.</code><code class="sig-name descname">initialise_WH</code><span class="sig-paren">(</span><em class="sig-param">width</em>, <em class="sig-param">length</em>, <em class="sig-param">kmeans</em>, <em class="sig-param">NumOfClasses</em>, <em class="sig-param">k_clusters</em>, <em class="sig-param">numImages</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/NMF_Sparse.html#initialise_WH"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#NMF_Sparse.initialise_WH" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialisation of W and H</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>width</strong> (<em>int</em><em>, </em><em>row of an image data</em>) – </p></li>
+<li><p><strong>length</strong> (<em>int</em><em>, </em><em>column of an image data</em>) – </p></li>
+<li><p><strong>kmeans</strong> (<em>list</em><em>, </em><em>kmeans classifiers for classes</em>) – </p></li>
+<li><p><strong>NumOfClasses</strong> (<em>int</em>) – </p></li>
+<li><p><strong>k_clusters</strong> (<em>int</em>) – </p></li>
+<li><p><strong>numImages</strong> (<em>int</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>W_init</strong> (<em>nd array</em>)</p></li>
+<li><p><strong>H_init</strong> (<em>nd array</em>)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="NMF_Sparse.nmf_allClass">
+<code class="sig-prename descclassname">NMF_Sparse.</code><code class="sig-name descname">nmf_allClass</code><span class="sig-paren">(</span><em class="sig-param">X</em>, <em class="sig-param">NumOfClasses</em>, <em class="sig-param">k_clusters</em>, <em class="sig-param">W_init</em>, <em class="sig-param">H_init</em>, <em class="sig-param">alpha=0</em>, <em class="sig-param">l1_ratio=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/NMF_Sparse.html#nmf_allClass"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#NMF_Sparse.nmf_allClass" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run Non-negative matrix factorization for each classes.
+Assign the updated W and H into a list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>NumOfClasses</strong> (<em>int</em>) – </p></li>
+<li><p><strong>k_clusters</strong> (<em>int</em><em>, </em><em>should be less than image dimension. Selected by elbow's method</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>W_all</strong> (<em>2d array, updated W for all classes. shape = image dimension, num of components</em>)</p></li>
+<li><p><strong>H_all</strong> (<em>2d array, updated H for all classes. shape = num of components, total num of sample</em>)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="NMF_Sparse.nmf_singleClass">
+<code class="sig-prename descclassname">NMF_Sparse.</code><code class="sig-name descname">nmf_singleClass</code><span class="sig-paren">(</span><em class="sig-param">NumOfClasses</em>, <em class="sig-param">X_class</em>, <em class="sig-param">k_clusters</em>, <em class="sig-param">alpha=0</em>, <em class="sig-param">l1_ratio=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/NMF_Sparse.html#nmf_singleClass"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#NMF_Sparse.nmf_singleClass" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a experimental function. Leave this function
+Run Non-negative matrix factorization for each classes.
+Assign the updated W and H into a list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>NumOfClasses</strong> (<em>int</em>) – </p></li>
+<li><p><strong>k_clusters</strong> (<em>int</em><em>, </em><em>should be less than image dimension. Selected by elbow's method</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>W_class</strong> (<em>list of arrays, contains W for each class</em>)</p></li>
+<li><p><strong>H_class</strong> (<em>list of arrays, contains H for each class</em>)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="NMF_Sparse.plotHistogram_W">
+<code class="sig-prename descclassname">NMF_Sparse.</code><code class="sig-name descname">plotHistogram_W</code><span class="sig-paren">(</span><em class="sig-param">W_</em>, <em class="sig-param">name_</em>, <em class="sig-param">NumOfClasses</em>, <em class="sig-param">k_clusters</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/NMF_Sparse.html#plotHistogram_W"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#NMF_Sparse.plotHistogram_W" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot Histogram of basis matrix.
+The histogram indicates disdributions of each geophysical feature magnitude.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>W_</strong> (<em>numpy array of basis matrix W</em>) – </p></li>
+<li><p><strong>name_</strong> (<em>numpy array of string</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p><a href="#id1"><span class="problematic" id="id2">W_</span></a> = np.array([W1, W2])</p>
+<p><a href="#id3"><span class="problematic" id="id4">name_</span></a> = np.array([name1, name2])</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="NMF_Sparse.plt_boxData">
+<code class="sig-prename descclassname">NMF_Sparse.</code><code class="sig-name descname">plt_boxData</code><span class="sig-paren">(</span><em class="sig-param">classL</em>, <em class="sig-param">numImagesPerClass</em>, <em class="sig-param">numImages</em>, <em class="sig-param">width</em>, <em class="sig-param">length</em>, <em class="sig-param">array_data=None</em>, <em class="sig-param">WH_product=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/NMF_Sparse.html#plt_boxData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#NMF_Sparse.plt_boxData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the first five sample images of the dataset in each class.
+It will give 25 plots in total.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>classL</strong> (<em>list</em><em>, </em><em>list of class labels. Starting from 0</em>) – </p></li>
+<li><p><strong>numImagesPerClass</strong> (<em>list</em><em>, </em><em>relating to classL: image number per corresponding class</em>) – </p></li>
+<li><p><strong>numImages</strong> (<em>int</em><em>, </em><em>total number of images in image dataset</em>) – </p></li>
+<li><p><strong>width</strong> (<em>int</em><em>, </em><em>single image row dimension</em>) – </p></li>
+<li><p><strong>length</strong> (<em>int</em><em>, </em><em>single image column dimension</em>) – </p></li>
+<li><p><strong>array_data</strong> (<em>3D array-like</em><em>, </em><em>stacked classes with shape = numImg</em><em>, </em><em>imgWidth</em><em>, </em><em>imgLength</em>) – </p></li>
+<li><p><strong>WH_product</strong> (<em>nd array</em><em>, </em><em>W*H product</em><em>, </em><em> Need to be reshped for plotting</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>none</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="NMF_Sparse.projection">
+<code class="sig-prename descclassname">NMF_Sparse.</code><code class="sig-name descname">projection</code><span class="sig-paren">(</span><em class="sig-param">N_p</em>, <em class="sig-param">s</em>, <em class="sig-param">L1</em>, <em class="sig-param">L2sqr</em>, <em class="sig-param">nonNeg</em>, <em class="sig-param">set_sparsity</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/NMF_Sparse.html#projection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#NMF_Sparse.projection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Projection operator that enforces sparsity on columns.
+When a vector s is given, find a same-sized vector v that has the
+desired L1 and L2 norm that has the closes Euclidian distance to s</p>
+<p>If the nonNeg flag is set, the output v is
+constrained to being non-negative (v&gt;=0).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N_p</strong> (<em>int</em><em>, </em><em>number of pixels</em>) – </p></li>
+<li><p><strong>s</strong> (<em>1d array</em><em>, </em><em>vector to be sparsified</em>) – </p></li>
+<li><p><strong>L1</strong> (<em>L1 norm</em>) – </p></li>
+<li><p><strong>L2sqr</strong> (<em>L2 square norm</em>) – </p></li>
+<li><p><strong>nonNeg</strong> (<em>Bool</em><em>, </em><em>non negativity flag</em>) – </p></li>
+<li><p><strong>set_sparsity</strong> (<em>double</em><em>, </em><em>target sparsity set by user</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>v</strong> (<em>1d array, sparsified columns</em>)</p></li>
+<li><p><strong>iterations</strong> (<em>int, number of iteration to convergence</em>)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="NMF_Sparse.replace_Hall_with_Hclass">
+<code class="sig-prename descclassname">NMF_Sparse.</code><code class="sig-name descname">replace_Hall_with_Hclass</code><span class="sig-paren">(</span><em class="sig-param">H_all</em>, <em class="sig-param">H_class</em>, <em class="sig-param">NumOfClasses</em>, <em class="sig-param">numImagesPerClass</em>, <em class="sig-param">k_clusters</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/NMF_Sparse.html#replace_Hall_with_Hclass"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#NMF_Sparse.replace_Hall_with_Hclass" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a experimental function. It is not used for generating masks. Leave this.
+Stack single class of Hclass result onto all class result H_all
+Concatenate W and H to to facilitate stacked calculation</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>H_all</strong> (<em>nd array</em><em>, </em><em>updated H for the whole dataset. shape = components number</em><em>, </em><em>total num of sample</em>) – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>H_concat</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>nd array, shape = components number, number of total dataset samples</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="NMF_Sparse.sparcify_columns">
+<code class="sig-prename descclassname">NMF_Sparse.</code><code class="sig-name descname">sparcify_columns</code><span class="sig-paren">(</span><em class="sig-param">mat</em>, <em class="sig-param">set_sparsity</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/NMF_Sparse.html#sparcify_columns"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#NMF_Sparse.sparcify_columns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sparsifying the matrix column.
+The algorithm takes the vector w_i as input and find a vector v that
+has target L1 and L2 norms that achieve the pre-defined sparseness ρ(w).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mat</strong> (<em>nd array</em><em>, </em><em>matrix to be sparsified</em>) – </p></li>
+<li><p><strong>set_sparsity</strong> (<em>double</em><em>, </em><em>target sparsity</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>mat</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>nd array, sparsified matrix</p>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<p>Patrik O. Hoyer, 2004</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="NMF_Sparse.splitX">
+<code class="sig-prename descclassname">NMF_Sparse.</code><code class="sig-name descname">splitX</code><span class="sig-paren">(</span><em class="sig-param">X</em>, <em class="sig-param">classL</em>, <em class="sig-param">numImagesPerClass</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/NMF_Sparse.html#splitX"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#NMF_Sparse.splitX" title="Permalink to this definition">¶</a></dt>
+<dd><p>Split data matrix X into classes matrix for performing Kmeans on each class</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>2D array</em><em>, </em><em>shape = total number of images</em><em>, </em><em>image dimension</em>) – </p></li>
+<li><p><strong>classL</strong> (<em>list</em><em>, </em><em>list of class labels. Starting from 0</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>X_class</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list of arrays, splitted classes of data</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="NMF_Sparse.stack_singleWH">
+<code class="sig-prename descclassname">NMF_Sparse.</code><code class="sig-name descname">stack_singleWH</code><span class="sig-paren">(</span><em class="sig-param">W_class</em>, <em class="sig-param">H_class</em>, <em class="sig-param">NumOfClasses</em>, <em class="sig-param">numImagesPerClass</em>, <em class="sig-param">k_clusters</em>, <em class="sig-param">width</em>, <em class="sig-param">length</em>, <em class="sig-param">numImages</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/NMF_Sparse.html#stack_singleWH"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#NMF_Sparse.stack_singleWH" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a experimental function. It is not used for generating masks. Leave this.
+Stack each class of updated W hozizontally and updated H diagonally for processing</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>W_class</strong> (<em>list of arrays</em><em>, </em><em>contains W for each class</em>) – </p></li>
+<li><p><strong>H_class</strong> (<em>list of arrays</em><em>, </em><em>contains H for each class</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>W_conc</strong> (<em>nd array, shape = single image dimension, components number</em>)</p></li>
+<li><p><strong>H_conc</strong> (<em>nd array, shape = components number, number of total dataset samples</em>)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-validate_Accuracy">
+<span id="check-accuracy-tool-validate-accuracy-py"></span><h1>Check Accuracy Tool: validate_Accuracy.py<a class="headerlink" href="#module-validate_Accuracy" title="Permalink to this headline">¶</a></h1>
+<p>Validate Accuracy of mask predictions.</p>
+<dl class="function">
+<dt id="validate_Accuracy.getAccuracy">
+<code class="sig-prename descclassname">validate_Accuracy.</code><code class="sig-name descname">getAccuracy</code><span class="sig-paren">(</span><em class="sig-param">y_truth</em>, <em class="sig-param">y_pred</em>, <em class="sig-param">classL_acc</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validate_Accuracy.html#getAccuracy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validate_Accuracy.getAccuracy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the Jacccard Index and accuracy score for multiclass or binary class pixel label prediction.
+Jaccard Score is the intersection of binary images y_pred and y_true divided by the union of BW1 and BW2</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>y_truth</strong> (<em>nd array</em><em>, </em><em>ground truth</em>) – </p></li>
+<li><p><strong>y_pred</strong> (<em>nd array</em><em>, </em><em>pixel-level prediction</em>) – </p></li>
+<li><p><strong>classL_acc</strong> (<em>int</em><em>, </em><em>classes chosen to validate</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>jacc_score</strong> (<em>1d array, contains jaccard index for each predicted classes</em>)</p></li>
+<li><p><strong>cf</strong> (<em>1d array, contains accuracy scores for each predicted classes</em>)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="validate_Accuracy.get_Ypred_Ytrue">
+<code class="sig-prename descclassname">validate_Accuracy.</code><code class="sig-name descname">get_Ypred_Ytrue</code><span class="sig-paren">(</span><em class="sig-param">mask_truth</em>, <em class="sig-param">classL_acc</em>, <em class="sig-param">classified_all</em>, <em class="sig-param">maskNum</em>, <em class="sig-param">numImagesPerClass</em>, <em class="sig-param">bkgrd_label</em>, <em class="sig-param">background=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validate_Accuracy.html#get_Ypred_Ytrue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validate_Accuracy.get_Ypred_Ytrue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create prediction array and ground truth array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mask_truth</strong> (<em>nd array</em><em>, </em><em>contain all classes of mask.</em>) – mask_truth shape = (num of class, num of masks per class, mask row, mask length)</p></li>
+<li><p><strong>int</strong><strong>, </strong><strong>classes chosen to validate</strong> (<em>classL_acc：</em>) – </p></li>
+<li><p><strong>classified_all</strong> (<em>nd arrays. Contains pixel labels coordinations</em>) – </p></li>
+<li><p><strong>maskNum</strong> (<em>int</em><em>, </em><em>total mask numbers per class</em>) – </p></li>
+<li><p><strong>numImagesPerClass</strong> (<em>int</em><em>, </em><em>number of images per class for the original dataset</em>) – </p></li>
+<li><p><strong>bkgrd_label</strong> (<em>int</em><em>, </em><em>background label</em>) – </p></li>
+<li><p><strong>background</strong> (<em>bool</em><em>, </em><em>flag for background</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>y_truth</strong> (<em>nd array, ground truths</em>)</p></li>
+<li><p><strong>y_pred</strong> (<em>nd array, pixel-level predictions</em>)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="validate_Accuracy.importMask">
+<code class="sig-prename descclassname">validate_Accuracy.</code><code class="sig-name descname">importMask</code><span class="sig-paren">(</span><em class="sig-param">width</em>, <em class="sig-param">length</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validate_Accuracy.html#importMask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validate_Accuracy.importMask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Import mask png files. The ground truth mask should have the same dimension with the box image
+:param width:
+:type width: int, single image number of row
+:param length:
+:type length: int, single image number of column</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><strong>mask_truth</strong> (<em>nd array, contain all classes of mask.</em>) – mask_truth shape = (num of class, num of masks per class, mask row, mask length)</p></li>
+<li><p><strong>maskNum</strong> (<em>int, number of masks per class</em>)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="validate_Accuracy.plotPredvsGT">
+<code class="sig-prename descclassname">validate_Accuracy.</code><code class="sig-name descname">plotPredvsGT</code><span class="sig-paren">(</span><em class="sig-param">mask_truth</em>, <em class="sig-param">numImagesPerClass</em>, <em class="sig-param">array_data</em>, <em class="sig-param">color_img</em>, <em class="sig-param">classL_acc</em>, <em class="sig-param">maskNum</em>, <em class="sig-param">imgIdx=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validate_Accuracy.html#plotPredvsGT"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validate_Accuracy.plotPredvsGT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot prediction vs ground truth mask</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mask_truth</strong> (<em>nd array</em><em>, </em><em>contain all classes of mask.</em>) – mask_truth shape = (num of class, num of masks per class, mask row, mask length)</p></li>
+<li><p><strong>numImagesPerClass</strong> (<em>int</em><em>, </em><em>number of images per class for the original dataset</em>) – </p></li>
+<li><p><strong>array_data</strong> (<em>nd array</em><em>, </em><em>original dataset</em>) – </p></li>
+<li><p><strong>color_img</strong> (<em>nd array</em><em>, </em><em>colorred mask of the images</em>) – </p></li>
+<li><p><strong>int</strong><strong>, </strong><strong>classes chosen to validate</strong> (<em>classL_acc：</em>) – </p></li>
+<li><p><strong>maskNum</strong> (<em>int</em><em>, </em><em>total mask numbers per class</em>) – </p></li>
+<li><p><strong>imgIdx</strong> (<em>int</em><em>, </em><em>index of image to show</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="validate_Accuracy.tune_sparsity_alpha">
+<code class="sig-prename descclassname">validate_Accuracy.</code><code class="sig-name descname">tune_sparsity_alpha</code><span class="sig-paren">(</span><em class="sig-param">array_data</em>, <em class="sig-param">X</em>, <em class="sig-param">iteration</em>, <em class="sig-param">numImagesPerClass</em>, <em class="sig-param">classL</em>, <em class="sig-param">classL_acc</em>, <em class="sig-param">width</em>, <em class="sig-param">length</em>, <em class="sig-param">sparsity_opt</em>, <em class="sig-param">kmeans</em>, <em class="sig-param">NumOfClasses</em>, <em class="sig-param">k_clusters</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validate_Accuracy.html#tune_sparsity_alpha"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validate_Accuracy.tune_sparsity_alpha" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run several iterations to check the effect of sparsity on accuracy and result.
+User can modify the functions to check how other parameters affect the accracy.</p>
+<p>This function will plot the jaccard indeies and accuracy scores for each predicted class</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-label_Pixel">
+<span id="label-position-extraction-tool-label-pixel-py"></span><h1>Label Position Extraction Tool: label_Pixel.py<a class="headerlink" href="#module-label_Pixel" title="Permalink to this headline">¶</a></h1>
+<p>Label pixels from NMF representations</p>
+<dl class="function">
+<dt id="label_Pixel.createBinaryMask">
+<code class="sig-prename descclassname">label_Pixel.</code><code class="sig-name descname">createBinaryMask</code><span class="sig-paren">(</span><em class="sig-param">classL</em>, <em class="sig-param">classN</em>, <em class="sig-param">numImages</em>, <em class="sig-param">width</em>, <em class="sig-param">length</em>, <em class="sig-param">numImagesPerClass</em>, <em class="sig-param">plotMask=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/label_Pixel.html#createBinaryMask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#label_Pixel.createBinaryMask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create binary mask for each input class</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>class_mask</strong></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>list of nd-arrays, Each array is a class of predicted masks</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="label_Pixel.extract_coordination">
+<code class="sig-prename descclassname">label_Pixel.</code><code class="sig-name descname">extract_coordination</code><span class="sig-paren">(</span><em class="sig-param">Y</em>, <em class="sig-param">NumOfClasses</em>, <em class="sig-param">numImages</em>, <em class="sig-param">width</em>, <em class="sig-param">length</em>, <em class="sig-param">bkgrd_label</em>, <em class="sig-param">gaussian_filtering=True</em>, <em class="sig-param">median_filtering=True</em>, <em class="sig-param">sigma=0.45</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/label_Pixel.html#extract_coordination"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#label_Pixel.extract_coordination" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the likelihood matrix of the nmf data matrix.
+Each pixel is a seismic structure in W.
+The likelihood matrix Y indicates the likelihood of each pixel being that structure</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>W_stk</strong> (<em>nd array</em><em>, </em><em>updated W with stacked result. shape = single image dimension</em><em>, </em><em>components number</em>) – </p></li>
+<li><p><strong>H_stk</strong> (<em>nd array</em><em>, </em><em>updated H with stacked result. shape = components number</em><em>, </em><em>number of total dataset samples</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>classified_all</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>nd array, classification matrix. Shape = (total num of data, width, length)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="label_Pixel.get_likelihoodMatrix">
+<code class="sig-prename descclassname">label_Pixel.</code><code class="sig-name descname">get_likelihoodMatrix</code><span class="sig-paren">(</span><em class="sig-param">W_stk</em>, <em class="sig-param">H_stk</em>, <em class="sig-param">NumOfClasses</em>, <em class="sig-param">k_clusters</em>, <em class="sig-param">numImages</em>, <em class="sig-param">width</em>, <em class="sig-param">length</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/label_Pixel.html#get_likelihoodMatrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#label_Pixel.get_likelihoodMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the likelihood matrix of the nmf data matrix.
+Each pixel is a seismic structure in W.
+The likelihood matrix Y indicates the likelihood of each pixel being that structure</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>W_stk</strong> (<em>nd array</em><em>, </em><em>updated W with stacked result. shape =</em><em> (</em><em>single image dimension</em><em>, </em><em>components number</em><em>)</em>) – </p></li>
+<li><p><strong>H_stk</strong> (<em>nd array</em><em>, </em><em>updated H with stacked result. shape =</em><em> (</em><em>components number</em><em>, </em><em>number of total dataset samples</em><em>)</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>Y</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>nd-array, likelihood matrix</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="label_Pixel.normalizeColumns">
+<code class="sig-prename descclassname">label_Pixel.</code><code class="sig-name descname">normalizeColumns</code><span class="sig-paren">(</span><em class="sig-param">matrix</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/label_Pixel.html#normalizeColumns"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#label_Pixel.normalizeColumns" title="Permalink to this definition">¶</a></dt>
+<dd><p>normalizes the input matrix to have the L1 norm of each column = 1</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>matrix</strong> (<em>nd array</em><em>, </em><em>matrix to be normalized</em>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="label_Pixel.plotLabels">
+<code class="sig-prename descclassname">label_Pixel.</code><code class="sig-name descname">plotLabels</code><span class="sig-paren">(</span><em class="sig-param">classL</em>, <em class="sig-param">numImagesPerClass</em>, <em class="sig-param">numImages</em>, <em class="sig-param">width</em>, <em class="sig-param">length</em>, <em class="sig-param">classN</em>, <em class="sig-param">array_data</em>, <em class="sig-param">colorarr</em>, <em class="sig-param">plot=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/label_Pixel.html#plotLabels"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#label_Pixel.plotLabels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the predicted pixel-level labels</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>classN</strong> (<em>list of arrays. Contain class of labels corrdinations</em>) – </p></li>
+<li><p><strong>classL</strong> (<em>list of integers. Contain labels for each class.</em>) – </p></li>
+<li><p><strong>array_data</strong> (<em>nd array，original data array</em>) – </p></li>
+<li><p><strong>colorarr</strong> (<em>list of lists. Each sublist is RGB color from 0-255</em>) – </p></li>
+<li><p><strong>plot</strong> (<em>bool</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>color_img</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>nd array, colorred mask of the images</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="label_Pixel.save_toPath">
+<code class="sig-prename descclassname">label_Pixel.</code><code class="sig-name descname">save_toPath</code><span class="sig-paren">(</span><em class="sig-param">maskPath</em>, <em class="sig-param">class_mask</em>, <em class="sig-param">classL</em>, <em class="sig-param">numImagesPerClass</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/label_Pixel.html#save_toPath"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#label_Pixel.save_toPath" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save each class masks to the paths defined by user.
+:param class_mask:
+:type class_mask: list of nd-array: contain classes of masks
+:param maskPath:
+:type maskPath: list of nd-array. Paths defined by user.contains n paths, where n is the number of classes input to data matrx X.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="label_Pixel.split_labelResult">
+<code class="sig-prename descclassname">label_Pixel.</code><code class="sig-name descname">split_labelResult</code><span class="sig-paren">(</span><em class="sig-param">classified_all</em>, <em class="sig-param">NumOfClasses</em>, <em class="sig-param">bkgrd_label=5</em>, <em class="sig-param">background=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/label_Pixel.html#split_labelResult"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#label_Pixel.split_labelResult" title="Permalink to this definition">¶</a></dt>
+<dd><p>To split the classification result into individuals.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>classified_all</strong> (<em>nd arrays. Contains pixel labels coordinations</em>) – </p></li>
+<li><p><strong>bkgrd_label</strong> (<em>int</em><em>, </em><em>labels for background.</em>) – </p></li>
+<li><p><strong>background</strong> (<em>bool</em><em>, </em><em>background flag. If the flag is False</em><em>, </em><em>then no background color when plotting the prediction</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>classN</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list of arrays. Contain class of labels coordinations</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">Pixel-level Label Prediction Tool</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Ping-Chen Tsai.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

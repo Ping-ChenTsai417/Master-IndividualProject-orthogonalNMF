@@ -1,0 +1,532 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>NMF_Sparse &#8212; Pixel-level Label Prediction Tool 0.0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for NMF_Sparse</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">Run Non-nagative matrx factorization with sparseness constraints</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="c1"># Author: Ping-Chen Tsai, Aug 2020 </span>
+
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span> 
+<span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">sqrt</span>
+
+
+<span class="kn">from</span> <span class="nn">sklearn.decomposition</span> <span class="kn">import</span> <span class="n">NMF</span>
+
+<div class="viewcode-block" id="plt_boxData"><a class="viewcode-back" href="../index.html#NMF_Sparse.plt_boxData">[docs]</a><span class="k">def</span> <span class="nf">plt_boxData</span><span class="p">(</span><span class="n">classL</span><span class="p">,</span> <span class="n">numImagesPerClass</span><span class="p">,</span> <span class="n">numImages</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">array_data</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">WH_product</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Plot the first five sample images of the dataset in each class.</span>
+<span class="sd">    It will give 25 plots in total.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    classL: list, list of class labels. Starting from 0</span>
+
+<span class="sd">    numImagesPerClass: list, relating to classL: image number per corresponding class</span>
+
+<span class="sd">    numImages: int, total number of images in image dataset</span>
+
+<span class="sd">    width: int, single image row dimension</span>
+<span class="sd">    </span>
+<span class="sd">    length: int, single image column dimension</span>
+<span class="sd">    </span>
+<span class="sd">    array_data: 3D array-like, stacked classes with shape = numImg, imgWidth, imgLength</span>
+<span class="sd">    </span>
+<span class="sd">    WH_product: nd array, W*H product, . Need to be reshped for plotting</span>
+<span class="sd">        </span>
+<span class="sd">    Return</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    none</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">img_all</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">WH_product</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="p">(</span><span class="n">numImages</span><span class="p">,</span><span class="n">width</span><span class="p">,</span><span class="n">length</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="n">img_all</span> <span class="o">=</span> <span class="n">array_data</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">classL</span><span class="p">:</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">axarr</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">11</span><span class="p">,</span> <span class="mi">11</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axarr</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">5</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">i</span><span class="o">!=</span><span class="mi">0</span><span class="p">:</span>
+                <span class="n">idx</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">numImagesPerClass</span><span class="p">[:</span><span class="n">i</span><span class="p">])</span><span class="o">+</span><span class="n">n</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">idx</span> <span class="o">=</span> <span class="n">n</span>
+                <span class="c1"># user can modify [idx+5] to choose the images display</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">img_all</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">5</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%i</span><span class="s2">. &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;Class </span><span class="si">%i</span><span class="s2">&quot;</span>  <span class="o">%</span> <span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">13</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="k">del</span> <span class="n">fig</span><span class="p">,</span> <span class="n">axarr</span></div>
+        
+<div class="viewcode-block" id="splitX"><a class="viewcode-back" href="../index.html#NMF_Sparse.splitX">[docs]</a><span class="k">def</span> <span class="nf">splitX</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">classL</span><span class="p">,</span> <span class="n">numImagesPerClass</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Split data matrix X into classes matrix for performing Kmeans on each class</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    X: 2D array, shape = total number of images, image dimension</span>
+<span class="sd">    </span>
+<span class="sd">    classL: list, list of class labels. Starting from 0</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ----------</span>
+<span class="sd">    X_class: list of arrays, splitted classes of data</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">X_class</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1"># split features based on classes</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">classL</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">i</span><span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">cur_idx</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">numImagesPerClass</span><span class="p">[:</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">next_idx</span> <span class="o">=</span> <span class="n">cur_idx</span> <span class="o">+</span> <span class="n">numImagesPerClass</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cur_idx</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">next_idx</span> <span class="o">=</span> <span class="n">numImagesPerClass</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            
+        <span class="n">X_class</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span> <span class="n">cur_idx</span><span class="p">:</span><span class="n">next_idx</span><span class="p">])</span>
+        
+    <span class="k">return</span> <span class="n">X_class</span></div>
+<div class="viewcode-block" id="initialise_WH"><a class="viewcode-back" href="../index.html#NMF_Sparse.initialise_WH">[docs]</a><span class="k">def</span> <span class="nf">initialise_WH</span><span class="p">(</span><span class="n">width</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">kmeans</span><span class="p">,</span> <span class="n">NumOfClasses</span><span class="p">,</span> <span class="n">k_clusters</span><span class="p">,</span> <span class="n">numImages</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Initialisation of W and H</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    width: int, row of an image data</span>
+<span class="sd">    </span>
+<span class="sd">    length: int, column of an image data</span>
+<span class="sd">    </span>
+<span class="sd">    kmeans: list, kmeans classifiers for classes</span>
+<span class="sd">    </span>
+<span class="sd">    NumOfClasses: int</span>
+<span class="sd">    </span>
+<span class="sd">    k_clusters: int</span>
+<span class="sd">    </span>
+<span class="sd">    numImages: int</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    W_init: nd array</span>
+<span class="sd">    </span>
+<span class="sd">    H_init: nd array</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="c1"># Extract kmeans centres of each class and stack them into W_init</span>
+    <span class="n">W_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">width</span><span class="o">*</span><span class="n">length</span><span class="p">,</span> <span class="n">NumOfClasses</span><span class="o">*</span><span class="n">k_clusters</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">NumOfClasses</span><span class="p">):</span>
+        <span class="n">W_init</span><span class="p">[:,</span> <span class="n">i</span><span class="o">*</span><span class="n">k_clusters</span><span class="p">:(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">k_clusters</span><span class="p">]</span> <span class="o">=</span> <span class="n">kmeans</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">cluster_centers_</span><span class="o">.</span><span class="n">T</span>
+    
+    <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
+    <span class="n">H_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">size</span> <span class="o">=</span> <span class="p">(</span><span class="n">NumOfClasses</span><span class="o">*</span><span class="n">k_clusters</span><span class="p">,</span> <span class="n">numImages</span><span class="p">))</span>
+
+    <span class="c1"># Make sure all the centroids are nonnegative</span>
+    <span class="n">W_init</span><span class="p">[</span><span class="n">W_init</span><span class="o">&lt;</span><span class="mf">0.00001</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">return</span> <span class="n">W_init</span><span class="p">,</span> <span class="n">H_init</span></div>
+
+<div class="viewcode-block" id="nmf_singleClass"><a class="viewcode-back" href="../index.html#NMF_Sparse.nmf_singleClass">[docs]</a><span class="k">def</span> <span class="nf">nmf_singleClass</span><span class="p">(</span><span class="n">NumOfClasses</span><span class="p">,</span> <span class="n">X_class</span><span class="p">,</span> <span class="n">k_clusters</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">l1_ratio</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This is a experimental function. Leave this function</span>
+<span class="sd">    Run Non-negative matrix factorization for each classes.</span>
+<span class="sd">    Assign the updated W and H into a list.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    NumOfClasses: int</span>
+<span class="sd">    </span>
+<span class="sd">    k_clusters: int, should be less than image dimension. Selected by elbow&#39;s method</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    W_class: list of arrays, contains W for each class</span>
+<span class="sd">    </span>
+<span class="sd">    H_class: list of arrays, contains H for each class</span>
+<span class="sd">    </span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="c1"># Individual class nmf</span>
+    <span class="n">NMFmodel</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">W_class</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">H_class</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">NumOfClasses</span><span class="p">):</span>
+        <span class="n">NMFmodel</span> <span class="o">=</span> <span class="n">NMF</span><span class="p">(</span><span class="n">n_components</span><span class="o">=</span><span class="n">k_clusters</span><span class="p">,</span><span class="n">init</span><span class="o">=</span><span class="s1">&#39;nndsvd&#39;</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s1">&#39;mu&#39;</span><span class="p">,</span> 
+                            <span class="n">beta_loss</span><span class="o">=</span><span class="s1">&#39;frobenius&#39;</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> 
+                            <span class="n">random_state</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">l1_ratio</span> <span class="o">=</span> <span class="n">l1_ratio</span><span class="p">)</span>
+
+
+        <span class="n">W_class</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">NMFmodel</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">X_class</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+        <span class="n">H_class</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">NMFmodel</span><span class="o">.</span><span class="n">components_</span><span class="p">)</span>
+    <span class="k">del</span> <span class="n">NMFmodel</span>
+    <span class="k">return</span> <span class="n">W_class</span><span class="p">,</span> <span class="n">H_class</span></div>
+
+<div class="viewcode-block" id="nmf_allClass"><a class="viewcode-back" href="../index.html#NMF_Sparse.nmf_allClass">[docs]</a><span class="k">def</span> <span class="nf">nmf_allClass</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">NumOfClasses</span><span class="p">,</span> <span class="n">k_clusters</span><span class="p">,</span> <span class="n">W_init</span><span class="p">,</span> <span class="n">H_init</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">l1_ratio</span> <span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Run Non-negative matrix factorization for each classes.</span>
+<span class="sd">    Assign the updated W and H into a list.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    NumOfClasses: int</span>
+<span class="sd">    </span>
+<span class="sd">    k_clusters: int, should be less than image dimension. Selected by elbow&#39;s method</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    W_all: 2d array, updated W for all classes. shape = image dimension, num of components</span>
+<span class="sd">    </span>
+<span class="sd">    H_all: 2d array, updated H for all classes. shape = num of components, total num of sample</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="c1"># Used kmeans centroid as W and H initialisation. Use nmf package for updating W and H.</span>
+    <span class="n">n_components</span> <span class="o">=</span> <span class="n">NumOfClasses</span><span class="o">*</span><span class="n">k_clusters</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;We are now running NMF with sparsity constraints ... &#39;</span><span class="p">)</span>
+    <span class="n">modelTest1</span> <span class="o">=</span> <span class="n">NMF</span><span class="p">(</span><span class="n">n_components</span><span class="o">=</span> <span class="n">n_components</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="s1">&#39;custom&#39;</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s1">&#39;mu&#39;</span><span class="p">,</span> 
+                     <span class="n">beta_loss</span><span class="o">=</span><span class="s1">&#39;frobenius&#39;</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> 
+                     <span class="n">random_state</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">l1_ratio</span> <span class="o">=</span> <span class="n">l1_ratio</span><span class="p">)</span>
+
+    <span class="n">W_all</span> <span class="o">=</span> <span class="n">modelTest1</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">W</span> <span class="o">=</span> <span class="n">W_init</span><span class="p">,</span> <span class="n">H</span> <span class="o">=</span> <span class="n">H_init</span><span class="p">)</span>
+    <span class="n">H_all</span> <span class="o">=</span> <span class="n">modelTest1</span><span class="o">.</span><span class="n">components_</span>
+    <span class="k">del</span> <span class="n">modelTest1</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;=========== Finished ==============&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">W_all</span><span class="p">,</span> <span class="n">H_all</span></div>
+
+<div class="viewcode-block" id="stack_singleWH"><a class="viewcode-back" href="../index.html#NMF_Sparse.stack_singleWH">[docs]</a><span class="k">def</span> <span class="nf">stack_singleWH</span><span class="p">(</span><span class="n">W_class</span><span class="p">,</span> <span class="n">H_class</span><span class="p">,</span> <span class="n">NumOfClasses</span><span class="p">,</span><span class="n">numImagesPerClass</span><span class="p">,</span> <span class="n">k_clusters</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">numImages</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This is a experimental function. It is not used for generating masks. Leave this.</span>
+<span class="sd">    Stack each class of updated W hozizontally and updated H diagonally for processing</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    -----------</span>
+<span class="sd">    </span>
+<span class="sd">    W_class: list of arrays, contains W for each class</span>
+<span class="sd">    </span>
+<span class="sd">    H_class: list of arrays, contains H for each class</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    W_conc: nd array, shape = single image dimension, components number</span>
+<span class="sd">    </span>
+<span class="sd">    H_conc: nd array, shape = components number, number of total dataset samples</span>
+<span class="sd">    </span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">W_conc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">width</span><span class="o">*</span><span class="n">length</span><span class="p">,</span> <span class="n">k_clusters</span><span class="o">*</span><span class="n">NumOfClasses</span><span class="p">))</span>
+    <span class="n">H_conc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">k_clusters</span><span class="o">*</span><span class="n">NumOfClasses</span><span class="p">,</span> <span class="n">numImages</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">NumOfClasses</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">i</span><span class="o">!=</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">cur_idx</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">numImagesPerClass</span><span class="p">[:</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">next_idx</span> <span class="o">=</span> <span class="n">cur_idx</span> <span class="o">+</span> <span class="n">numImagesPerClass</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        
+        <span class="k">else</span><span class="p">:</span><span class="c1"># i==0</span>
+            <span class="n">cur_idx</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">next_idx</span> <span class="o">=</span> <span class="n">numImagesPerClass</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">W_conc</span><span class="p">[:,</span> <span class="n">i</span><span class="o">*</span><span class="n">k_clusters</span><span class="p">:(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">k_clusters</span><span class="p">]</span> <span class="o">=</span> <span class="n">W_class</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">H_conc</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="n">k_clusters</span><span class="p">:(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">k_clusters</span><span class="p">,</span> <span class="n">cur_idx</span><span class="p">:</span><span class="n">next_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">H_class</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">W_conc</span><span class="p">,</span> <span class="n">H_conc</span></div>
+
+<div class="viewcode-block" id="replace_Hall_with_Hclass"><a class="viewcode-back" href="../index.html#NMF_Sparse.replace_Hall_with_Hclass">[docs]</a><span class="k">def</span> <span class="nf">replace_Hall_with_Hclass</span><span class="p">(</span><span class="n">H_all</span><span class="p">,</span> <span class="n">H_class</span><span class="p">,</span> <span class="n">NumOfClasses</span><span class="p">,</span> <span class="n">numImagesPerClass</span><span class="p">,</span> <span class="n">k_clusters</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; </span>
+<span class="sd">    This is a experimental function. It is not used for generating masks. Leave this.</span>
+<span class="sd">    Stack single class of Hclass result onto all class result H_all</span>
+<span class="sd">    Concatenate W and H to to facilitate stacked calculation</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    H_all: nd array, updated H for the whole dataset. shape = components number, total num of sample</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    H_concat: nd array, shape = components number, number of total dataset samples</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">H_concat</span> <span class="o">=</span> <span class="n">H_all</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">NumOfClasses</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">i</span><span class="o">!=</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">cur_idx</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">numImagesPerClass</span><span class="p">[:</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">next_idx</span> <span class="o">=</span> <span class="n">cur_idx</span> <span class="o">+</span> <span class="n">numImagesPerClass</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span><span class="c1"># i==0</span>
+            <span class="n">cur_idx</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">next_idx</span> <span class="o">=</span> <span class="n">numImagesPerClass</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">H_concat</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="n">k_clusters</span><span class="p">:(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">k_clusters</span><span class="p">,</span> <span class="n">cur_idx</span><span class="p">:</span><span class="n">next_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">H_class</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">H_concat</span></div>
+
+<div class="viewcode-block" id="projection"><a class="viewcode-back" href="../index.html#NMF_Sparse.projection">[docs]</a><span class="k">def</span> <span class="nf">projection</span><span class="p">(</span><span class="n">N_p</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">L1</span><span class="p">,</span> <span class="n">L2sqr</span><span class="p">,</span> <span class="n">nonNeg</span><span class="p">,</span> <span class="n">set_sparsity</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Projection operator that enforces sparsity on columns.</span>
+<span class="sd">    When a vector s is given, find a same-sized vector v that has the </span>
+<span class="sd">    desired L1 and L2 norm that has the closes Euclidian distance to s</span>
+<span class="sd">    </span>
+<span class="sd">    If the nonNeg flag is set, the output v is</span>
+<span class="sd">    constrained to being non-negative (v&gt;=0).</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    N_p: int, number of pixels</span>
+<span class="sd">    </span>
+<span class="sd">    s: 1d array, vector to be sparsified</span>
+<span class="sd">    </span>
+<span class="sd">    L1: L1 norm</span>
+<span class="sd">    </span>
+<span class="sd">    L2sqr: L2 square norm</span>
+<span class="sd">    </span>
+<span class="sd">    nonNeg: Bool, non negativity flag</span>
+<span class="sd">    </span>
+<span class="sd">    set_sparsity: double, target sparsity set by user</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    v: 1d array, sparsified columns</span>
+<span class="sd">    </span>
+<span class="sd">    iterations: int, number of iteration to convergence</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span> 
+        <span class="n">nonNeg</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span> 
+        <span class="n">isneg</span> <span class="o">=</span> <span class="n">s</span><span class="o">&lt;</span><span class="mi">0</span> <span class="c1"># save column negativity state</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="c1"># take absolute of the colume.</span>
+
+    <span class="c1"># projecting the point to the sum constraint hyperplane</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">s</span> <span class="o">+</span> <span class="p">(</span><span class="n">L1</span><span class="o">-</span><span class="nb">sum</span><span class="p">(</span><span class="n">s</span><span class="p">))</span><span class="o">/</span><span class="n">N</span>
+    <span class="c1"># Initialize an array for zero valued components</span>
+    <span class="n">zerocoeff</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">midpoint</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">N</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span><span class="o">*</span><span class="n">L1</span><span class="o">/</span><span class="p">(</span><span class="n">N</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">zerocoeff</span><span class="p">))</span><span class="c1">#  projection operator by Hoyer(2004)</span>
+        <span class="n">midpoint</span><span class="p">[</span><span class="n">zerocoeff</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">midpoint</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">midpoint</span><span class="p">,(</span><span class="nb">len</span><span class="p">(</span><span class="n">midpoint</span><span class="p">),))</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">v</span><span class="o">-</span><span class="n">midpoint</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">w</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="c1"># b = 2*w.T*v</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">w</span><span class="nd">@v</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">v</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">-</span><span class="n">L2sqr</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span> 
+        <span class="n">alphap</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="n">b</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">sqrt</span><span class="p">(</span><span class="n">b</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="mi">4</span><span class="o">*</span><span class="n">a</span><span class="o">*</span><span class="n">c</span><span class="p">)))</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">a</span><span class="p">)</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">alphap</span><span class="o">*</span><span class="n">w</span> <span class="o">+</span> <span class="n">v</span>
+
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">vv</span><span class="o">&gt;=</span><span class="mi">0</span> <span class="k">for</span> <span class="n">vv</span> <span class="ow">in</span> <span class="n">v</span><span class="p">):</span>
+            <span class="c1"># we found the solution!</span>
+<span class="c1">#             print(&#39;All elements in v are non-negative&#39;)</span>
+            <span class="n">itrations</span> <span class="o">=</span> <span class="n">j</span><span class="o">+</span><span class="mi">1</span>
+            <span class="k">break</span>
+        <span class="n">j</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c1"># Set negs to zero, subtract appropriate amount from rest</span>
+        <span class="n">zerocoeff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">v</span><span class="o">&lt;=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="c1">#     print(&quot;Replace the negative values of the array with 0&quot;)</span>
+        <span class="n">v</span><span class="p">[</span><span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">tempsum</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">v</span> <span class="o">+</span> <span class="p">(</span><span class="n">L1</span><span class="o">-</span><span class="n">tempsum</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">N_p</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">zerocoeff</span><span class="p">))</span> <span class="c1">#Calculate c := (sum(s)−L1)/(dim(x)−size(Z))</span>
+        <span class="n">v</span><span class="p">[</span><span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">new_sparsity</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">v</span><span class="o">==</span><span class="mi">0</span><span class="p">)</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">new_sparsity</span> <span class="o">&gt;</span> <span class="n">set_sparsity</span><span class="p">:</span>
+            <span class="n">v</span><span class="p">[</span><span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">itrations</span> <span class="o">=</span> <span class="n">j</span>
+<span class="c1">#             print(&#39;ALERT: Does not converge during sparsifying process&#39;)</span>
+            <span class="k">break</span>
+    <span class="c1"># sum(v.^2)=k2 which is closest to s in the euclidian sense</span>
+    <span class="k">try</span><span class="p">:</span> 
+        <span class="n">nonNeg</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span> 
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Return v</span><span class="se">\&#39;</span><span class="s1">s original sign&#39;</span><span class="p">)</span>
+    <span class="c1">#     (-2*isneg + 1) make the non-nagative element index  -1</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">((</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">isneg</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">v</span><span class="p">)</span> <span class="c1"># Return original signs to solution</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">imag</span><span class="p">))</span><span class="o">&gt;</span><span class="mf">1e-5</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;ERROR: you have imaginary values!&#39;</span><span class="p">)</span>
+    <span class="k">del</span> <span class="n">zerocoeff</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">tempsum</span><span class="p">,</span> <span class="n">alphap</span>
+    <span class="k">return</span> <span class="n">v</span><span class="p">,</span> <span class="n">itrations</span></div>
+
+<div class="viewcode-block" id="sparcify_columns"><a class="viewcode-back" href="../index.html#NMF_Sparse.sparcify_columns">[docs]</a><span class="k">def</span> <span class="nf">sparcify_columns</span><span class="p">(</span><span class="n">mat</span><span class="p">,</span> <span class="n">set_sparsity</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Sparsifying the matrix column.</span>
+<span class="sd">    The algorithm takes the vector w_i as input and find a vector v that</span>
+<span class="sd">    has target L1 and L2 norms that achieve the pre-defined sparseness ρ(w).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    mat: nd array, matrix to be sparsified</span>
+<span class="sd">    </span>
+<span class="sd">    set_sparsity: double, target sparsity</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    mat: nd array, sparsified matrix</span>
+<span class="sd">    </span>
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    Patrik O. Hoyer, 2004</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Please wait. We are sparsifying columns, it takes about 7-10 minutes ... &#39;</span><span class="p">)</span>
+    <span class="c1">#     Number of pixel</span>
+    <span class="n">N_p</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">mat</span><span class="p">)</span>
+    <span class="c1">#  desired L1 to L2 ratio to acheive sparsity level:</span>
+    <span class="n">L1toL2</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">N_p</span><span class="p">)</span> <span class="o">-</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">N_p</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">set_sparsity</span> <span class="c1"># L1L2ratio</span>
+    <span class="c1">#L2 norms of columns of matrix</span>
+    <span class="n">L2W_norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">mat</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="c1">#L2W</span>
+    <span class="c1">#     Apply sparseness constraints on W_init</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="c1"># claculate sparsifying time</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">mat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="n">col</span> <span class="o">=</span> <span class="n">mat</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span>
+    <span class="c1">#     set colume to achieve desired sparseness </span>
+        <span class="n">L1W_norm</span> <span class="o">=</span> <span class="n">L1toL2</span><span class="o">*</span><span class="n">L2W_norm</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">scol</span><span class="p">,</span> <span class="n">itr</span> <span class="o">=</span> <span class="n">projection</span><span class="p">(</span><span class="n">N_p</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">L1W_norm</span><span class="p">,</span> <span class="n">L2W_norm</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">set_sparsity</span><span class="p">)</span>
+    <span class="c1">#     update:</span>
+        <span class="n">mat</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">scol</span>
+        <span class="k">del</span> <span class="n">scol</span><span class="p">,</span> <span class="n">itr</span>
+<span class="c1">#     sparse_matrix = mat</span>
+    <span class="n">end</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;=== Finished ===&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Elapsed time for applying sparseness constraint:&quot;</span><span class="p">,</span> 
+                                             <span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">,</span> <span class="s1">&#39;seconds.&#39;</span><span class="p">)</span> 
+    <span class="k">del</span> <span class="n">L2W_norm</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">N_p</span>
+    <span class="k">return</span> <span class="n">mat</span></div>
+
+<div class="viewcode-block" id="plotHistogram_W"><a class="viewcode-back" href="../index.html#NMF_Sparse.plotHistogram_W">[docs]</a><span class="k">def</span> <span class="nf">plotHistogram_W</span><span class="p">(</span><span class="n">W_</span><span class="p">,</span> <span class="n">name_</span><span class="p">,</span> <span class="n">NumOfClasses</span><span class="p">,</span> <span class="n">k_clusters</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Plot Histogram of basis matrix.</span>
+<span class="sd">    The histogram indicates disdributions of each geophysical feature magnitude.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    W_ : numpy array of basis matrix W</span>
+
+<span class="sd">    name_: numpy array of string</span>
+<span class="sd">    </span>
+<span class="sd">    Examples</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    W_ = np.array([W1, W2])</span>
+<span class="sd">    </span>
+<span class="sd">    name_ = np.array([name1, name2])</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">f</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span>
+    <span class="n">im</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="c1"># Plot distribution of two W</span>
+    
+    <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">W_</span><span class="p">,</span> <span class="n">name_</span><span class="p">):</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">NumOfClasses</span><span class="p">,</span> <span class="n">W</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">k_clusters</span><span class="p">))</span>
+        <span class="n">W_flat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">W</span><span class="p">,</span> <span class="p">(</span><span class="n">W</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">W</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],))</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">NumOfClasses</span><span class="p">):</span>
+<span class="c1">#             Assign classes of w into w[i] for plotting</span>
+            <span class="n">w</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">W_flat</span><span class="p">[</span><span class="n">W</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">k_clusters</span><span class="o">*</span><span class="n">i</span> <span class="p">:</span> <span class="n">W</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">k_clusters</span><span class="o">*</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
+
+            <span class="c1"># You can normalize it by setting </span>
+            <span class="c1"># density=True and stacked=True. By doing this the total area under each distribution becomes 1.</span>
+            <span class="c1"># e.g: dict(density=True, stacked=True)</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.35</span><span class="p">)</span> <span class="c1"># Set opacity</span>
+
+            <span class="n">axs</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">w</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span> <span class="s1">&#39;Class </span><span class="si">%i</span><span class="s1">&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="p">)</span>
+        <span class="k">del</span> <span class="n">w</span><span class="p">,</span> <span class="n">W_flat</span>
+        <span class="n">axs</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Frequency Histogram of &#39;</span><span class="o">+</span> <span class="n">name</span><span class="p">)</span>
+        <span class="n">axs</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Seismic Feature Magnitude&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
+        <span class="n">axs</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Frequency&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
+        <span class="n">axs</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">prop</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;size&#39;</span><span class="p">:</span> <span class="mi">14</span><span class="p">})</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;The above histograms show distibution of features in two different basis matrices W&#39;</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;W_Histograms.jpg&#39;</span><span class="p">)</span>
+    <span class="k">del</span> <span class="n">f</span>
+    <span class="k">return</span> </div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Pixel-level Label Prediction Tool</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Ping-Chen Tsai.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

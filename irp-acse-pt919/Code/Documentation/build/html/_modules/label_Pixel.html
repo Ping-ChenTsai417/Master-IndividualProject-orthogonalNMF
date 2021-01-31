@@ -1,0 +1,361 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>label_Pixel &#8212; Pixel-level Label Prediction Tool 0.0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for label_Pixel</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">Label pixels from NMF representations</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="c1"># Author: Ping-Chen Tsai, Aug 2020 </span>
+<span class="kn">import</span> <span class="nn">NMF_Sparse</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">PIL</span> <span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">import</span> <span class="nn">scipy.io</span>
+<span class="kn">import</span> <span class="nn">scipy.ndimage</span> <span class="k">as</span> <span class="nn">ndimage</span>
+<span class="kn">from</span> <span class="nn">scipy.ndimage</span> <span class="kn">import</span> <span class="n">gaussian_filter</span>
+<span class="kn">from</span> <span class="nn">scipy.ndimage</span> <span class="kn">import</span> <span class="n">median_filter</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span> 
+<span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">sqrt</span>
+
+<div class="viewcode-block" id="normalizeColumns"><a class="viewcode-back" href="../index.html#label_Pixel.normalizeColumns">[docs]</a><span class="k">def</span> <span class="nf">normalizeColumns</span><span class="p">(</span><span class="n">matrix</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    normalizes the input matrix to have the L1 norm of each column = 1</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    matrix: nd array, matrix to be normalized</span>
+<span class="sd">    </span>
+<span class="sd">    &#39;&#39;&#39;</span>
+<span class="c1">#     output = np.zeros((matrix.shape))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+<span class="c1">#         output[:,i] = np.divide(matrix[:,i], sum(abs(matrix[:,i])))</span>
+        <span class="n">matrix</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">matrix</span><span class="p">[:,</span><span class="n">i</span><span class="p">],</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">matrix</span><span class="p">[:,</span><span class="n">i</span><span class="p">])))</span>
+    <span class="k">return</span> <span class="n">matrix</span> <span class="c1">#output</span></div>
+
+<div class="viewcode-block" id="get_likelihoodMatrix"><a class="viewcode-back" href="../index.html#label_Pixel.get_likelihoodMatrix">[docs]</a><span class="k">def</span> <span class="nf">get_likelihoodMatrix</span><span class="p">(</span><span class="n">W_stk</span><span class="p">,</span> <span class="n">H_stk</span><span class="p">,</span> <span class="n">NumOfClasses</span><span class="p">,</span> <span class="n">k_clusters</span><span class="p">,</span> <span class="n">numImages</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">length</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Get the likelihood matrix of the nmf data matrix. </span>
+<span class="sd">    Each pixel is a seismic structure in W. </span>
+<span class="sd">    The likelihood matrix Y indicates the likelihood of each pixel being that structure</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    W_stk: nd array, updated W with stacked result. shape = (single image dimension, components number)</span>
+<span class="sd">    </span>
+<span class="sd">    H_stk: nd array, updated H with stacked result. shape = (components number, number of total dataset samples)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    Y: nd-array, likelihood matrix</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">Qr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">kron</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">NumOfClasses</span><span class="p">,</span> <span class="n">NumOfClasses</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">k_clusters</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+    <span class="n">Qr</span> <span class="o">=</span> <span class="n">normalizeColumns</span><span class="p">(</span><span class="n">Qr</span><span class="p">)</span>
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">numImages</span><span class="p">,</span> <span class="n">width</span><span class="o">*</span><span class="n">length</span><span class="p">,</span> <span class="n">NumOfClasses</span><span class="p">))</span>
+    <span class="n">N_class</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="n">NumOfClasses</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">img</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">numImages</span><span class="p">):</span>
+        <span class="n">Hi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">H_stk</span><span class="p">[:,</span><span class="n">img</span><span class="p">],(</span><span class="nb">len</span><span class="p">(</span><span class="n">H_stk</span><span class="p">[:,</span><span class="n">img</span><span class="p">]),</span><span class="mi">1</span><span class="p">))</span>
+        <span class="c1"># map the coefficients of each image into the seismic structures that make up that image</span>
+        <span class="c1"># Each Y shows the likelihood of each seismic structure for each pixel in the image.</span>
+        <span class="n">H_l</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Hi</span><span class="p">,</span><span class="n">N_class</span><span class="p">)</span>
+        <span class="n">WH_i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">W_stk</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">Qr</span><span class="p">,</span> <span class="n">H_l</span><span class="p">))</span>
+    <span class="c1">#     print(&#39;len(WH_product)&#39;,len(WH_product))</span>
+        <span class="n">Y</span><span class="p">[</span><span class="n">img</span><span class="p">,:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">WH_i</span>
+        
+    <span class="k">return</span> <span class="n">Y</span></div>
+<div class="viewcode-block" id="extract_coordination"><a class="viewcode-back" href="../index.html#label_Pixel.extract_coordination">[docs]</a><span class="k">def</span> <span class="nf">extract_coordination</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">NumOfClasses</span><span class="p">,</span> <span class="n">numImages</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">bkgrd_label</span><span class="p">,</span>
+                         <span class="n">gaussian_filtering</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">median_filtering</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">sigma</span> <span class="o">=</span> <span class="mf">0.45</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Get the likelihood matrix of the nmf data matrix. </span>
+<span class="sd">    Each pixel is a seismic structure in W. </span>
+<span class="sd">    The likelihood matrix Y indicates the likelihood of each pixel being that structure</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    W_stk: nd array, updated W with stacked result. shape = single image dimension, components number</span>
+<span class="sd">    </span>
+<span class="sd">    H_stk: nd array, updated H with stacked result. shape = components number, number of total dataset samples</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    classified_all: nd array, classification matrix. Shape = (total num of data, width, length)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;We are extracting coordination of pixel labels...&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">gaussian_filtering</span><span class="p">:</span>
+    <span class="c1">#     Filter each image</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">numImages</span><span class="p">):</span>
+            <span class="n">Y_n</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">width</span><span class="p">,</span><span class="n">length</span><span class="p">))</span>
+            <span class="n">Y_n</span> <span class="o">=</span> <span class="n">Y</span><span class="p">[</span><span class="n">n</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+            <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">NumOfClasses</span><span class="p">):</span>
+                <span class="n">temp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Y_n</span><span class="p">[:</span> <span class="p">,</span><span class="n">label</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,(</span><span class="n">width</span><span class="p">,</span><span class="n">length</span><span class="p">))</span>
+                <span class="n">temp</span> <span class="o">=</span> <span class="n">gaussian_filter</span><span class="p">(</span><span class="n">temp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
+                <span class="n">Y</span><span class="p">[</span><span class="n">n</span><span class="p">,</span> <span class="p">:,</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">temp</span><span class="p">,(</span><span class="n">length</span><span class="o">*</span><span class="n">width</span><span class="p">,))</span>
+            <span class="k">del</span> <span class="n">Y_n</span>
+
+    <span class="c1"># Get the maximun value of each row </span>
+    <span class="n">vals</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">axis</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="c1">#  Using vals to show which area has more confidence</span>
+    <span class="c1"># devided by sum of each row</span>
+    <span class="n">conf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">axis</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="mf">1e-5</span><span class="p">)</span>
+    <span class="c1"># Get the column index of maximum value. The index indicate which class the pixel falls in.</span>
+    <span class="n">classImg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">axis</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="n">classified_all</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">numImages</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">length</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">median_filtering</span><span class="p">:</span>
+        <span class="c1">#     Filter each image</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">numImages</span><span class="p">):</span>
+            <span class="n">img</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">classImg</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="p">(</span><span class="n">length</span><span class="p">,</span> <span class="n">width</span><span class="p">))</span>
+            <span class="n">classified_all</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">median_filter</span><span class="p">(</span><span class="n">img</span><span class="p">,</span><span class="n">size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">),</span> <span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;reflect&#39;</span><span class="p">)</span>
+            <span class="k">del</span> <span class="n">img</span>
+
+    <span class="c1"># Turn all the low confidence pixels to bkgrd_label class</span>
+    <span class="n">std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">conf</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">threshold</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">conf</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span><span class="o">+</span><span class="n">std</span><span class="o">/</span><span class="mf">2.7</span> <span class="c1"># 3.1 can be tuned</span>
+
+    <span class="c1"># Turn all the low confidence pixels to other class, class 5</span>
+    <span class="c1"># Reshape confidence values into data matrix&#39;s dimension</span>
+    <span class="n">conf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">conf</span><span class="p">,</span> <span class="p">(</span><span class="n">numImages</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">width</span><span class="p">))</span>
+    
+    <span class="c1"># loop through all the images to get the classification mask</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">numImages</span><span class="p">):</span>
+        <span class="n">classified_all</span><span class="p">[</span><span class="n">n</span><span class="p">][</span><span class="n">conf</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">&lt;</span><span class="n">threshold</span><span class="p">[</span><span class="n">n</span><span class="p">]]</span> <span class="o">=</span> <span class="n">bkgrd_label</span> 
+        
+    <span class="k">del</span> <span class="n">classImg</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">conf</span><span class="p">,</span> <span class="n">vals</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;==== Finished ===&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">classified_all</span></div>
+
+<div class="viewcode-block" id="split_labelResult"><a class="viewcode-back" href="../index.html#label_Pixel.split_labelResult">[docs]</a><span class="k">def</span> <span class="nf">split_labelResult</span><span class="p">(</span><span class="n">classified_all</span><span class="p">,</span> <span class="n">NumOfClasses</span><span class="p">,</span> <span class="n">bkgrd_label</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">background</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; </span>
+<span class="sd">    To split the classification result into individuals.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    classified_all: nd arrays. Contains pixel labels coordinations</span>
+<span class="sd">    </span>
+<span class="sd">    bkgrd_label: int, labels for background. </span>
+<span class="sd">    </span>
+<span class="sd">    background: bool, background flag. If the flag is False, then no background color when plotting the prediction</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    classN: list of arrays. Contain class of labels coordinations</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">classN</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">NumOfClasses</span><span class="p">):</span>
+        <span class="n">classN</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">classified_all</span><span class="o">==</span><span class="n">i</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">background</span><span class="p">:</span>
+        <span class="n">classN</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">classified_all</span><span class="o">==</span> <span class="n">bkgrd_label</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">classN</span></div>
+
+<div class="viewcode-block" id="createBinaryMask"><a class="viewcode-back" href="../index.html#label_Pixel.createBinaryMask">[docs]</a><span class="k">def</span> <span class="nf">createBinaryMask</span><span class="p">(</span><span class="n">classL</span><span class="p">,</span> <span class="n">classN</span><span class="p">,</span> <span class="n">numImages</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">numImagesPerClass</span><span class="p">,</span> <span class="n">plotMask</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Create binary mask for each input class</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    class_mask: list of nd-arrays, Each array is a class of predicted masks</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;We are creating binary masks for each class...&#39;</span><span class="p">)</span>
+    <span class="c1"># create an empty mask with size to total number of image</span>
+    <span class="n">msk_N</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">numImages</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">length</span><span class="p">))</span> 
+    <span class="c1"># The saved mask will exclude any labels from other class. </span>
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">classL</span><span class="p">:</span>
+    <span class="c1"># c = [0, 1, 2, 3] for LANDMASS</span>
+        <span class="n">strtrange</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">numImagesPerClass</span><span class="p">[:</span><span class="n">c</span><span class="p">])</span>
+        <span class="n">endRange</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">numImagesPerClass</span><span class="p">[:</span><span class="n">c</span><span class="p">])</span><span class="o">+</span> <span class="n">numImagesPerClass</span><span class="p">[</span><span class="n">c</span><span class="p">]</span>
+<span class="c1">#         Uncomment following line to check the range of each class</span>
+<span class="c1">#         print(&#39;Class %i range: &#39;% c,strtrange, endRange)</span>
+
+        <span class="c1"># Exlude any image index that is not within the range of class index, </span>
+        <span class="c1"># for example the class index of fault is 1000-1499, if index 10 has a fault lable, </span>
+        <span class="c1"># exclude coordination at index 10 from putput.</span>
+        <span class="n">trueIdx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">classN</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">&gt;=</span><span class="n">strtrange</span><span class="p">,</span> <span class="n">classN</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">&lt;</span><span class="n">endRange</span><span class="p">))</span>
+
+        <span class="n">img_index</span> <span class="o">=</span> <span class="n">classN</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">trueIdx</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="n">row_index</span> <span class="o">=</span> <span class="n">classN</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="n">trueIdx</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="n">col_index</span> <span class="o">=</span> <span class="n">classN</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="mi">2</span><span class="p">][</span><span class="n">trueIdx</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+
+        <span class="n">msk_N</span><span class="p">[</span><span class="n">img_index</span><span class="p">,</span> <span class="n">row_index</span><span class="p">,</span><span class="n">col_index</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="c1"># assign 1 to the predicted coordination</span>
+        <span class="k">del</span> <span class="n">trueIdx</span><span class="p">,</span> <span class="n">img_index</span><span class="p">,</span> <span class="n">row_index</span><span class="p">,</span> <span class="n">col_index</span> <span class="c1"># clean memory</span>
+        
+    <span class="k">if</span> <span class="n">plotMask</span><span class="p">:</span>
+        <span class="n">NMF_Sparse</span><span class="o">.</span><span class="n">plt_boxData</span><span class="p">(</span><span class="n">classL</span><span class="p">,</span> <span class="n">numImagesPerClass</span><span class="p">,</span> <span class="n">numImages</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">array_data</span> <span class="o">=</span> <span class="n">msk_N</span><span class="p">,</span> <span class="n">WH_product</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+        
+    <span class="c1">#     Split class of mask</span>
+    <span class="n">class_mask</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">classL</span><span class="p">:</span>
+        <span class="n">strtrange</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">numImagesPerClass</span><span class="p">[:</span><span class="n">c</span><span class="p">])</span>
+        <span class="n">endRange</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">numImagesPerClass</span><span class="p">[:</span><span class="n">c</span><span class="p">])</span><span class="o">+</span> <span class="n">numImagesPerClass</span><span class="p">[</span><span class="n">c</span><span class="p">]</span>
+        <span class="n">class_mask</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">msk_N</span><span class="p">[</span><span class="n">strtrange</span><span class="p">:</span><span class="n">endRange</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;=== Finished ====&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">class_mask</span><span class="p">,</span> <span class="n">msk_N</span></div>
+
+<div class="viewcode-block" id="save_toPath"><a class="viewcode-back" href="../index.html#label_Pixel.save_toPath">[docs]</a><span class="k">def</span> <span class="nf">save_toPath</span><span class="p">(</span><span class="n">maskPath</span><span class="p">,</span> <span class="n">class_mask</span><span class="p">,</span> <span class="n">classL</span><span class="p">,</span> <span class="n">numImagesPerClass</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Save each class masks to the paths defined by user.</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    class_mask: list of nd-array: contain classes of masks</span>
+<span class="sd">    </span>
+<span class="sd">    maskPath: list of nd-array. Paths defined by user.contains n paths, where n is the number of classes input to data matrx X.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="c1"># class_mask[class_mask == 1] = 255.0 # change true label to 255</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Saving binary masks...&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">path_</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">classL</span><span class="p">,</span> <span class="n">maskPath</span><span class="p">):</span>
+
+    <span class="c1">#     take the number of image in each class, save the mask through path</span>
+        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">numImagesPerClass</span><span class="p">[</span><span class="n">n</span><span class="p">]):</span>
+    <span class="c1">#       class_mask[0][n].shape[0]</span>
+            <span class="n">to_be_saved</span> <span class="o">=</span> <span class="n">class_mask</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">n</span><span class="p">][</span><span class="n">m</span><span class="p">]</span>
+            <span class="n">to_be_saved</span><span class="p">[</span><span class="n">to_be_saved</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mf">255.0</span> <span class="c1"># change true label to 255</span>
+            <span class="n">rescaled</span> <span class="o">=</span><span class="n">to_be_saved</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+            <span class="c1"># rescaled = (255.0 / to_be_saved.max() * (to_be_saved - to_be_saved.min())).astype(np.uint8)</span>
+            <span class="n">img_</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">rescaled</span><span class="p">)</span>
+            <span class="n">img_</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">path_</span> <span class="o">+</span> <span class="s1">&#39;Mask_pred </span><span class="si">%i</span><span class="s1">.png&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">m</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;=== Finished ===&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="plotLabels"><a class="viewcode-back" href="../index.html#label_Pixel.plotLabels">[docs]</a><span class="k">def</span> <span class="nf">plotLabels</span><span class="p">(</span><span class="n">classL</span><span class="p">,</span> <span class="n">numImagesPerClass</span><span class="p">,</span><span class="n">numImages</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">classN</span><span class="p">,</span> <span class="n">array_data</span><span class="p">,</span> <span class="n">colorarr</span><span class="p">,</span> <span class="n">plot</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot the predicted pixel-level labels</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    classN: list of arrays. Contain class of labels corrdinations</span>
+<span class="sd">    </span>
+<span class="sd">    classL: list of integers. Contain labels for each class. </span>
+<span class="sd">    </span>
+<span class="sd">    array_data: nd array，original data array</span>
+<span class="sd">    </span>
+<span class="sd">    colorarr: list of lists. Each sublist is RGB color from 0-255</span>
+<span class="sd">    </span>
+<span class="sd">    plot: bool</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    color_img: nd array, colorred mask of the images</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">temp1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">numImages</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span> <span class="c1"># 3 channels</span>
+    <span class="n">color_img</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">(</span><span class="n">temp1</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">classN</span><span class="p">)):</span>
+        <span class="n">color_img</span><span class="p">[</span><span class="n">classN</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">classN</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">classN</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">2</span><span class="p">],</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">colorarr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">plot</span><span class="p">:</span>
+        <span class="c1"># Plot original images with masks</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">classL</span><span class="p">:</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">axarr</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">13</span><span class="p">,</span> <span class="mi">13</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axarr</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">5</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="n">i</span><span class="o">!=</span><span class="mi">0</span><span class="p">:</span>
+                    <span class="n">idx</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">numImagesPerClass</span><span class="p">[:</span><span class="n">i</span><span class="p">])</span><span class="o">+</span><span class="n">n</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">idx</span> <span class="o">=</span> <span class="n">n</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">array_data</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">5</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">color_img</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">5</span><span class="p">],</span> <span class="n">alpha</span><span class="o">=.</span><span class="mi">4</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%i</span><span class="s2">. &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;Class </span><span class="si">%i</span><span class="s2">&quot;</span>  <span class="o">%</span> <span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">13</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="k">del</span> <span class="n">fig</span><span class="p">,</span> <span class="n">axarr</span>
+        
+    <span class="k">return</span> <span class="n">color_img</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Pixel-level Label Prediction Tool</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Ping-Chen Tsai.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
