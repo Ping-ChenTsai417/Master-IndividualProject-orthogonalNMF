@@ -1,0 +1,17 @@
+===============================================================================
+SEG2017-weakly-supervised-labeling：
+https://github.com/yalaudah/SEG2017-weakly-supervised-labeling
+===============================================================================
+Content-Adaptive-Non-Parametric-Texture-Similarity-Measure
+https://github.com/olivesgatech/Content-Adaptive-Non-Parametric-Texture-Similarity-Measure
+===============================================================================
+Salt dome Challenge
+https://www.kaggle.com/c/tgs-salt-identification-challenge
+===============================================================================
+JSON: dataturks output
+each line with  JSON file
+https://www.dropbox.com/s/wnly14ka7chjhbo/Seismic%20Traps%20-%20Public%20Datasets%20%281%29.json?dl=0
+=================================================================================
+NMF basic:
+Youtube:https://www.youtube.com/watch?v=o4pPTwsd-5M
+https://github.com/ahmadvh/Non-Negative-Matrix-factorization---Implemented-in-python
