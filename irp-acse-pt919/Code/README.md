@@ -21,7 +21,7 @@ python -m pip install git https://github.com/acse-2019/irp-acse-pt919
 ```
 ### User Guide
 
-[Code](https://github.com/acse-2019/irp-acse-pt919/tree/master/Code) folder directs the user to five ```.py``` files.
+[Code](https://github.com/Ping-ChenTsai417/Master-IndividualProject-orthogonalNMF/tree/master/irp-acse-pt919/Code) folder directs the user to five ```.py``` files.
 
 **MainTest.py**
 * Main function for testing the pixel labelling software. It contains step-by-step function calls to run the entire pixel labelling tool. The modulr utilised functions in ```NMF_Sparse.py```, ```label_Pixel.py``` and ```validate_Accuracy.py```. User should import data here. Since every dataset is different, the data importing step should be customed by users. Data matrix X is generated in this main function for further process. 
