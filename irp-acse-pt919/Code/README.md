@@ -61,7 +61,7 @@ python -m sphinx  -b latex docs latex
 
 Then following the instructions to process the `Pixel-level Label Prediction Tool.tex` file in the `latex` directory in your browser.
 
-* Download our[Documentation for the pixel-level labelling tool](https://github.com/acse-2019/irp-acse-pt919/blob/master/Code/Documentation/build/html/index.html) to view documentation in your browser.
+* Download our[Documentation for the pixel-level labelling tool](Documentation/build/html/index.html) to view documentation in your browser.
 
 ### Performance of the tool
 Since the input of our NMF with sparsity model have no labels, we compare the predicted results with ground truth directly using Jaccard Index and Accuracy score. 
